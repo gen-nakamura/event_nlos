@@ -160,16 +160,21 @@ def get_auto_keys():
 
 if __name__ == "__main__":
     for num_bin in num_bins:
-        # for rosbag_file in rosbag_files:
-        #     name_input = rosbag_file.replace('rosbag', 'train_data').replace('.bag', f'_{num_bin}.npz')
-        #     # if os.path.exists(name_input):
-        #     #     os.remove(name_input)
-        #     if not os.path.exists(name_input):
-        #         print(f'creating file: {os.path.basename(name_input)}')
-        #         input = load_bag_file(rosbag_file)
-        #         input = events_to_voxel_grid(input, num_bin, SIZE_X, SIZE_Y)
-        #         input = np.array(input, dtype=np.int32)
-        #         input_norm = min_max(input)
-        #         np.savez_compressed(name_input, input_norm)
+        for rosbag_file in rosbag_files:
+            name_input = rosbag_file.replace('rosbag', 'train_data').replace('.bag', f'_{num_bin}.npz')
+            # if os.path.exists(name_input):
+            #     os.remove(name_input)
+            if not os.path.exists(name_input):
+                print(f'creating file: {os.path.basename(name_input)}')
+                input = load_bag_file(rosbag_file)
+                input = events_to_voxel_grid(input, num_bin, SIZE_X, SIZE_Y)
+                input = np.array(input, dtype=np.int32)
+                input_norm = min_max(input)
+                np.savez_compressed(name_input, input_norm)
 
-        f = open(srcpath, "r")
+        # f = open(srcpath, "r")
+        # while True:
+        #     auto_keys = np.array(get_auto_keys())
+        #     if not auto_keys:
+        #         break
+            
