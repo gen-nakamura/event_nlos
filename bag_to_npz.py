@@ -6,6 +6,7 @@ import glob
 # import re
 import rosbag
 import matplotlib.pyplot as plt
+import shutil
 
 rosbag_files = glob.glob("./Dataset/rosbag/*.bag")
 srcpath = glob.glob("./Dataset/src/*.txt")[0]
@@ -13,6 +14,7 @@ TOPIC_EVENTS = '/cam0/events'
 SIZE_X = 640
 SIZE_Y = 480
 num_bins = [30, 50, 150]
+FRAMES = 150
 
 def events_to_voxel_grid(events, num_bins, width, height):
     """
@@ -128,7 +130,7 @@ def get_auto_keys():
     if not DataName:
         print("EOL")
         f.close()
-        return
+        return None, None
     CameraVar = list(map(float, f.readline().split(",")))
     CameraPosition = CameraVar[:3]
     CameraRotation = CameraVar[3:]
@@ -154,27 +156,67 @@ def get_auto_keys():
     # res = render_sequence_to_movie_minimal(DataName, PKG_DIR+seq_name, MovieFolderPath+DataName, on_finished_callback)
     # print('this is response from renderer: ', res)
     # if finished, remove tr
-    return AutoKey
+    return DataName, np.array(AutoKey)
 
+
+def calculate_coordinates(data, result_coords):
+    timestamps = data[:, 0].astype(float)
+    coords = data[:, 1:3].astype(float)
+
+    # 時間間隔を計算
+    time_diffs = np.diff(timestamps)
+
+    # 座標の変化量を計算
+    coord_diffs = np.diff(coords, axis=0)
+
+    # 各時間間隔ごとの速度を計算
+    velocities = coord_diffs / time_diffs[:, np.newaxis]
+
+    for i in range(int(time_diffs)):
+        time_diff = i
+        # 各地点での座標を計算
+        if i == 0:
+            new_coords = coords[0]
+        else:
+            new_coords = coords[0] + velocities[0] * time_diff
+        result_coords = np.append(result_coords, [new_coords], axis=0)
+    return result_coords
 
 
 if __name__ == "__main__":
+    shutil.rmtree('./Dataset/validation_data/')
+    os.mkdir('./Dataset/validation_data/')
     for num_bin in num_bins:
-        for rosbag_file in rosbag_files:
-            name_input = rosbag_file.replace('rosbag', 'train_data').replace('.bag', f'_{num_bin}.npz')
-            # if os.path.exists(name_input):
-            #     os.remove(name_input)
-            if not os.path.exists(name_input):
-                print(f'creating file: {os.path.basename(name_input)}')
-                input = load_bag_file(rosbag_file)
-                input = events_to_voxel_grid(input, num_bin, SIZE_X, SIZE_Y)
-                input = np.array(input, dtype=np.int32)
-                input_norm = min_max(input)
-                np.savez_compressed(name_input, input_norm)
+        # for rosbag_file in rosbag_files:
+        #     name_input = rosbag_file.replace('rosbag', 'train_data').replace('.bag', f'_{num_bin}.npz')
+        #     # if os.path.exists(name_input):
+        #     #     os.remove(name_input)
+        #     if not os.path.exists(name_input):
+        #         print(f'creating file: {os.path.basename(name_input)}')
+        #         input = load_bag_file(rosbag_file)
+        #         input = events_to_voxel_grid(input, num_bin, SIZE_X, SIZE_Y)
+        #         input = np.array(input, dtype=np.int32)
+        #         input_norm = min_max(input)
+        #         np.savez_compressed(name_input, input_norm)
 
-        # f = open(srcpath, "r")
-        # while True:
-        #     auto_keys = np.array(get_auto_keys())
-        #     if not auto_keys:
-        #         break
-            
+        f = open(srcpath, "r")
+        while True:
+            print(num_bin)
+            data_name, auto_keys = get_auto_keys()
+            if not data_name:
+                break
+            result_coords = np.empty((0, 2))
+            for i in range(len(auto_keys)-1):
+                print(auto_keys[i:i+2, :])
+                result_coords = calculate_coordinates(np.array(auto_keys[i:i+2, :]), result_coords)
+
+            # 元の配列を一定数のセグメントに分割
+            if num_bin != FRAMES:
+                segment_length = FRAMES // num_bin
+                split_array = np.split(result_coords, num_bin, axis=0)
+
+                # 各セグメントの平均を計算して新しい配列を作成
+                result_coords = np.array([segment.mean(axis=0) for segment in split_array])
+            print(result_coords.shape)
+            np.savez_compressed(f'./Dataset/validation_data/{data_name}_{num_bin}.npz', result_coords)
+
