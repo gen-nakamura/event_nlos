@@ -2,22 +2,12 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as T
 import wandb
-import lpips
 from model import E2VIDRecurrent, E2VID
-#from dataload import load_bag_file
 from torch.utils.data import Dataset, DataLoader
-#from tensorboardX import SummaryWriter
 from datetime import datetime
-#import os
 import matplotlib.pyplot as plt
-#os.environ["OPENCV_IO_ENABLE_OPENEXR"]="1"
-#import cv2
 import numpy as np
 import glob
-import random
-#import sys
-#sys.path.append("/home/kentahorikawa/E2VID/rpg_e2vid")
-#from utils.inference_utils import events_to_voxel_grid_pytorch, events_to_voxel_grid
 
 input_path = '/home/kentahorikawa/focal_stack/data/processed/synth_rand/Dataset/input_5_norm/'
 target_path = '/home/kentahorikawa/focal_stack/data/processed/synth_rand/Dataset/target_5_norm/'
