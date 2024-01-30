@@ -1,3 +1,14 @@
 Dataset/
 example.ipynb
 wandb/
+img/
+eye_gazing/data_check/
+eye_gazing/Dataset/
+eye_gazing/wandb/
+*.mp4
+tmp/
+simulate/
+eye_gazing/__pycache__/
+lip_reading/model/
+lip_reading/__pycache__/
+rosbag_tmp/
